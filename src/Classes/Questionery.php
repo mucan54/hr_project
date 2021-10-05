@@ -2,8 +2,10 @@
 
 namespace App\Classes;
 
+use App\Abstracts\Question;
 use App\Interfaces\QuestionInterface;
 use App\Interfaces\QuestionsInterface;
+use App\Traits\DependentQuestion;
 
 class Questionery{
 
@@ -42,30 +44,26 @@ class Questionery{
     public function askMe(){
         $next=false;
         if($this->currentQuestion<$this->questionsNum){
-            /** @var QuestionInterface $question */
+            /** @var Question $question */
             $question = $this->questions->questions()[$this->currentQuestion];
+            $next = $question;
 
-            if ($question->isDependent() && $question->hasDependency && !$question->answered){
-
-                $next = $question;
-
-            }else if($question->isDependent() && $question->isDependencyCheck()){
+            if(!$question->isDependent()){
 
                 $this->currentQuestion = $this->currentQuestion+1;
-                $question->setIsDependencyCheck(false);
-                $next = $question->dependents;
+            }else if($question->answered){
 
-            } else if($question->isDependent() && $question->answered){
-
-                if($this->currentQuestion+1<$this->questionsNum)
-                    $next = $this->questions->questions()[$this->currentQuestion+1];
-
-                $this->currentQuestion = $this->currentQuestion+2;
+                /** @var DependentQuestion $question */
+                if ($question->isDependencyCheck()) {
+                    $this->currentQuestion = $this->currentQuestion + 1;
+                    $next = $question->dependents;
+                } else {
+                    if ($this->currentQuestion + 1 < $this->questionsNum)
+                        $next = $this->questions->questions()[$this->currentQuestion + 1];
+                    $this->currentQuestion = $this->currentQuestion + 2;
+                }
             }
-            else{
-                $this->currentQuestion = $this->currentQuestion+1;
-                $next = $question;
-            }
+
         }
         return $next;
     }
